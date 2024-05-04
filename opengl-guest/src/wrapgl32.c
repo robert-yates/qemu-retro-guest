@@ -39,7 +39,6 @@ static FILE *logfp = NULL;
 #define MESAVER 0x320
 #define MESAPT_MM_BASE 0xefffe000
 
-extern const char rev_[];
 static volatile uint32_t *ptm;
 static volatile uint32_t *pt0;
 static uint32_t *pt;
@@ -17169,7 +17168,7 @@ mglMakeCurrent (uint32_t arg0, uint32_t arg1)
         return 0;
     //DPRINTF("MakeCurrent %x %x", arg0, arg1);
     ptVer[0] = arg1;
-    memcpy((char *)&ptVer[1], rev_, 8);
+    memcpy((char *)&ptVer[1], "qretro-", 8);
     memcpy(((char *)&ptVer[1] + 8), icdBuild, sizeof(icdBuild));
     ptm[0xFF8 >> 2] = MESAGL_MAGIC;
     if (!currGLRC) {
@@ -17488,7 +17487,7 @@ BOOL APIENTRY DllMain( HINSTANCE hModule,
             GetModuleFileName(NULL, procName, sizeof(procName) - 1);
             DPRINTF("MesaGL Init ( %s )", procName);
 	    DPRINTF("ptm 0x%08x fbtm 0x%08x", (uint32_t)ptm, (uint32_t)fbtm);
-            memcpy(&fbtm[(MGLFBT_SIZE - ALIGNBO(1)) >> 2], rev_, ALIGNED(1));
+            memcpy(&fbtm[(MGLFBT_SIZE - ALIGNBO(1)) >> 2], "qretro-", ALIGNED(1));
 	    ptm[(0xFBCU >> 2)] = (0xA0UL << 12) | MESAVER;
 	    HostRet = ptm[(0xFBCU >> 2)];
 	    if (HostRet != ((MESAVER << 8) | 0xa0UL)) {
