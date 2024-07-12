@@ -17397,6 +17397,8 @@ wglSetPixelFormat(HDC hdc, int format, const PIXELFORMATDESCRIPTOR *ppfd)
           ((rsp[9] == rsp[1])? rsp[8]:rsp[0]);
     HookDeviceGammaRamp(ret);
     HookTimeGetTime(ret);
+    if (!hdc && !format)
+        return 0;
     if (currGLRC) {
         mglMakeCurrent(0, 0);
         mglDeleteContext(MESAGL_MAGIC);
@@ -17415,6 +17417,27 @@ wglSetPixelFormat(HDC hdc, int format, const PIXELFORMATDESCRIPTOR *ppfd)
 BOOL WINAPI COMPACT
 wgdSetPixelFormat(HDC hdc, int format, const PIXELFORMATDESCRIPTOR *ppfd)
 { return wglSetPixelFormat(hdc, format, ppfd); }
+
+static void mglSetAffinity(void)
+{
+    const char *ThreadAffinity[] = {
+        "Unigine_x86",
+        0,
+    };
+    int i;
+    for (i = 0; ThreadAffinity[i]; i++) {
+        if (GetModuleHandle(ThreadAffinity[i]))
+            break;
+    }
+    DWORD affinityMask[2];
+    GetProcessAffinityMask(GetCurrentProcess(), &affinityMask[0], &affinityMask[1]);
+    if (ThreadAffinity[i])
+        SetThreadAffinityMask(GetCurrentThread(), (1 << ((GetCurrentThreadId() >> 2) &
+                        ((sizeof(DWORD) << 3) - __builtin_clz(affinityMask[0]) - 1))));
+    else
+        SetProcessAffinityMask(GetCurrentProcess(), (1 << ((GetCurrentProcessId() >> 2) &
+                        ((sizeof(DWORD) << 3) - __builtin_clz(affinityMask[0]) - 1))));
+}
 
 LRESULT CALLBACK CallWndProc(int nCode, WPARAM wParam, LPARAM lParam)
 {
@@ -17446,10 +17469,7 @@ BOOL APIENTRY DllMain( HINSTANCE hModule,
     GetVersionEx(&osInfo);
     HookPatchfxCompat(osInfo.dwPlatformId);
     if (osInfo.dwPlatformId == VER_PLATFORM_WIN32_NT) {
-        DWORD affinityMask[2];
-        GetProcessAffinityMask(GetCurrentProcess(), &affinityMask[0], &affinityMask[1]);
-        SetThreadAffinityMask(GetCurrentThread(), (1 << ((GetCurrentThreadId() >> 2) &
-                        ((sizeof(DWORD) << 3) - __builtin_clz(affinityMask[0]) - 1))));
+        mglSetAffinity();
         kmdDrvInit(&drv);
     }
     else
